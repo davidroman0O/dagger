@@ -161,18 +161,7 @@ func TestGraph(t *testing.T) {
 		assert.False(t, ok)
 
 	})
-	t.Run("graphviz", func(t *testing.T) {
-		graph, err := dagger.NewDAG[*User](dagger.WithVizualization())
-		assert.NoError(t, err)
-		jane := graph.SetNode(Jane)
-		john := graph.SetNode(John)
-		edge, err := jane.SetEdge("knows", john, map[string]string{})
-		assert.Nil(t, err)
-		assert.NotNil(t, edge)
-		img, err := graph.GraphViz()
-		assert.NoError(t, err)
-		assert.NotNil(t, img)
-	})
+
 	t.Run("breadthFirstSearch", func(t *testing.T) {
 		graph, err := dagger.NewDAG[*User]()
 		assert.NoError(t, err)

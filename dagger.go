@@ -31,19 +31,16 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"image"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/goccy/go-graphviz"
-	"github.com/goccy/go-graphviz/cgraph"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/autom8ter/async"
+	"github.com/goccy/go-graphviz/cgraph"
 )
 
 // UniqueID returns a unique identifier with the given prefix
@@ -184,31 +181,6 @@ func (n *GraphNode[T]) SetEdge(relationship string, toNode Node, metadata map[st
 	n.graph.edges.Set(e.ID(), e)
 	to.edgesTo.Set(e.ID(), e)
 	n.edgesFrom.Set(e.ID(), e)
-	if n.graph.options.vizualize {
-		ge, err := n.graph.viz.CreateEdge(e.ID(), n.node, to.node)
-		if err != nil {
-			return nil, err
-		}
-		ge.SetLabel(e.ID())
-		if label, ok := metadata["label"]; ok {
-			ge.SetLabel(label)
-		}
-		if color, ok := metadata["color"]; ok {
-			ge.SetColor(color)
-		}
-		if fontColor, ok := metadata["fontcolor"]; ok {
-			ge.SetFontColor(fontColor)
-		}
-		if weight, ok := metadata["weight"]; ok {
-			weightFloat, _ := strconv.ParseFloat(weight, 64)
-			ge.SetWeight(weightFloat)
-		}
-		if penWidth, ok := metadata["penwidth"]; ok {
-			penWidthFloat, _ := strconv.ParseFloat(penWidth, 64)
-			ge.SetPenWidth(penWidthFloat)
-		}
-		e.edge = ge
-	}
 	return e, nil
 }
 
@@ -220,16 +192,13 @@ func (n *GraphNode[T]) RemoveEdge(edgeID string) {
 }
 
 func (n *GraphNode[T]) removeEdge(edgeID string) {
-	edge, ok := n.graph.edges.Get(edgeID)
+	_, ok := n.graph.edges.Get(edgeID)
 	if !ok {
 		return
 	}
 	n.graph.edges.Delete(edgeID)
 	n.edgesFrom.Delete(edgeID)
 	n.edgesTo.Delete(edgeID)
-	if edge.edge != nil {
-		n.graph.viz.DeleteEdge(edge.edge)
-	}
 }
 
 // Remove removes the current node from the graph
@@ -243,9 +212,6 @@ func (n *GraphNode[T]) Remove() error {
 		return true
 	})
 	n.graph.nodes.Delete(n.ID())
-	if n.graph.options.vizualize {
-		n.graph.viz.DeleteNode(n.node)
-	}
 	return nil
 }
 
@@ -322,8 +288,6 @@ func (n *GraphNode[T]) IsConnectedTo(node *GraphNode[T]) bool {
 type DAG[T Node] struct {
 	nodes   *HashMap[string, *GraphNode[T]]
 	edges   *HashMap[string, *GraphEdge[T]]
-	gviz    *graphviz.Graphviz
-	viz     *cgraph.Graph
 	mu      sync.RWMutex
 	options *dagOpts
 }
@@ -352,12 +316,7 @@ func NewDAG[T Node](opts ...DagOpt) (*DAG[T], error) {
 	g := &DAG[T]{
 		nodes:   NewHashMap[string, *GraphNode[T]](),
 		edges:   NewHashMap[string, *GraphEdge[T]](),
-		gviz:    graphviz.New(),
 		options: options,
-	}
-	if options.vizualize {
-		graph, _ := g.gviz.Graph()
-		g.viz = graph
 	}
 	return g, err
 }
@@ -371,21 +330,6 @@ func (g *DAG[T]) SetNode(node Node) *GraphNode[T] {
 		graph:     g,
 	}
 	g.nodes.Set(node.ID(), n)
-	if g.options.vizualize {
-		gn, err := g.viz.CreateNode(fmt.Sprintf("%v", node.ID()))
-		if err != nil {
-			panic(err)
-		}
-		gn.SetLabel(fmt.Sprintf("%v", node.ID()))
-		if label, ok := node.Metadata()["label"]; ok {
-			gn.SetLabel(label)
-		}
-		if color, ok := node.Metadata()["color"]; ok {
-			gn.SetColor(color)
-		}
-
-		n.node = gn
-	}
 
 	return n
 }
@@ -725,20 +669,6 @@ func (g *DAG[T]) topology(reverse bool, stack *Stack[*GraphNode[T]], node *Graph
 	temporary.Remove(node.ID())
 	permanent.Add(node.ID())
 	stack.Push(node)
-}
-
-// GraphViz returns a graphviz image
-func (g *DAG[T]) GraphViz() (image.Image, error) {
-	if g.viz == nil {
-		return nil, fmt.Errorf("graphviz not configured")
-	}
-	g.mu.RLock()
-	defer g.mu.RUnlock()
-	img, err := g.gviz.RenderImage(g.viz)
-	if err != nil {
-		return nil, err
-	}
-	return img, nil
 }
 
 // NewHashMap creates a new generic hash map

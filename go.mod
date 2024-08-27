@@ -1,4 +1,4 @@
-module github.com/autom8ter/dagger/v3
+module github.com/davidroman0O/dagger
 
 go 1.20
 

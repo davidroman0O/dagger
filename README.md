@@ -3,8 +3,11 @@
 # dagger
 
 ```go
-import "github.com/autom8ter/dagger/v3"
+// import "github.com/autom8ter/dagger/v3"
+import "github.com/davidroman/dagger"
 ```
+
+> I'm sorry for the fork autom8ter, I don't want the graphviz dependency, it is printing unwanted lines and i don't have the time RIGHT NOW to find why and fix it
 
 Package dagger is a collection of generic, concurrency safe datastructures including a Directed Acyclic Graph and others. Datastructures are implemented using generics in Go 1.18.
 

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/autom8ter/dagger/v3"
+	"github.com/davidroman0O/dagger"
 	"github.com/stretchr/testify/assert"
 )
 
